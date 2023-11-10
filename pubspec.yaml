@@ -29,8 +29,12 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  dio_http_formatter: ^3.2.1
   flutter:
     sdk: flutter
+  flutter_riverpod: ^2.4.5
+  http_certificate_pinning: ^2.1.2
+  rsa_pkcs: ^2.1.0
   http: ^1.1.0
 
 dev_dependencies:
@@ -51,6 +55,13 @@ dev_dependencies:
 flutter:
   assets:
     - assets/cert.pem
+    - assets/key.pem
+    - assets/cert1.pem
+    - assets/server2.pem
+    - assets/cert2.pem
+    - assets/localhost.crt
+    - assets/loc1.crt
+    - assets/123.crt
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

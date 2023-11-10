@@ -1,145 +1,70 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'dart:io';
+import 'package:http/io_client.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  ByteData data = await PlatformAssetBundle().load('assets/cert.pem');
-  SecurityContext.defaultContext
-      .setTrustedCertificatesBytes(data.buffer.asUint8List());
-
-  runApp(MyApp());
+main() {
+  HttpOverrides.global = MyHttpOverrides();
+  runApp(
+    const MaterialApp(
+      home: MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Login Example',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(),
-    );
+  _MyAppState createState() => _MyAppState();
+}
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }
 
-class MyHomePage extends StatelessWidget {
-  Future<String> login() async {
-    SecurityContext securityContext = SecurityContext.defaultContext;
-    final String serverUrl = 'https://127.0.0.1:8080/login';
-    final url = Uri.parse(serverUrl);
-    //final ByteData crtData = await rootBundle.load('assets/cert3.pem');
-    //securityContext.setTrustedCertificatesBytes(crtData.buffer.asUint8List());
-    securityContext.setTrustedCertificates('assets/cert.pem');
-    String ml = 'nikita.leventev97@gmail.com';
-    final response = await HttpClient(context: securityContext).postUrl(url);
-    response.headers.set(
-        'idToken',
-        'eyJhbGciOiJSUzI1NiIsImtpZCI6ImEwNmFmMGI2OGEyMTE5ZDY5MmNhYzRhYmY0MTVmZjM3ODgxMzZmNjUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI0MTIzNTA4NjMwMjctZGZpdGhnOGgwNjY4djFoNTJoOWhzcWY5NjAyazFyNDAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI0MTIzNTA4NjMwMjctaWswODJpdDUyMTFhN2I1Y3VubGlwcjYzYm50aWxiZzguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDkzMzg0ODY2OTkxNTQ1NzY2NDUiLCJlbWFpbCI6Im5pa2l0YS5sZXZlbnRldjk3QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiRXppbyBOaWsiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTEZ3VkxZS2l3NnFiRjNTaFdNMXFrSUowSVRoLTUxbS00QmdGbHJzRVZOPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IkV6aW8iLCJmYW1pbHlfbmFtZSI6Ik5payIsImxvY2FsZSI6InJ1IiwiaWF0IjoxNjk4MDY5NDU2LCJleHAiOjE2OTgwNzMwNTZ9.eie_wFgBFYMpLHe9klHB3mDeP-eV1DEA3H3IvLtKouFNUSvycEoTT0Y2rDAvoAN0pMC4yfNKxHVNRqebhz5g06gScbhXCLxLHDZ-BT8mAKaqBOJWY9NCHXTgffnsFXnMK0nbHuwi8q03ARZaRszx6qo1pnxzSAYAqJEVnJMj2DPOTb1sYcb2aGQ7VAgVc9p03jv1oIgQDnkNI2Jqe16e45KERZ_9ypgIN7Ijm5sy7-aXn0mF4mqPu_oV38Xkg8Oa4YsiQMrIT_qidMrPFZeI41ldEk_Xf-504K-QfslmHDzkDg1vILVChlbl6SOLEI9MBBcJjPOUMNiG0XxUNtKtAw'
-            as String);
-    response.headers.set('email', ml);
+class _MyAppState extends State<MyApp> {
+  fetchData() async {
+    HttpClient _client = HttpClient(context: await globalContext);
+    _client.badCertificateCallback =
+        (X509Certificate cert, String host, int port) => false;
+    IOClient _ioClient = new IOClient(_client);
 
-    HttpClientResponse httpResponse = await response.close();
-    String responseBody = await httpResponse.transform(utf8.decoder).join();
-    if (httpResponse.statusCode == 200) {
-      print(responseBody);
-      return responseBody;
-    } else {
-      throw Exception('Failed to login');
-    }
-// Load the SSL certificate for the server
-    //securityContext.setTrustedCertificates('assets/cert.pem');
+    var queryParameters = {
+      'mail': 'nikita.levыentev97@gmail.com',
+      'id_token':
+          'eyJhbGciOiJSUzI1NiIsImtpZCI6ImY4MzNlOGE3ZmUzZmU0Yjg3ODk0ODIxOWExNjg0YWZhMzczY2E4NmYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI0MTIzNTA4NjMwMjctZGZpdGhnOGgwNjY4djFoNTJoOWhzcWY5NjAyazFyNDAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI0MTIzNTA4NjMwMjctaWswODJpdDUyMTFhN2I1Y3VubGlwcjYzYm50aWxiZzguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDkzMzg0ODY2OTkxNTQ1NzY2NDUiLCJlbWFpbCI6Im5pa2l0YS5sZXZlbnRldjk3QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiRXppbyBOaWsiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTEZ3VkxZS2l3NnFiRjNTaFdNMXFrSUowSVRoLTUxbS00QmdGbHJzRVZOPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IkV6aW8iLCJmYW1pbHlfbmFtZSI6Ik5payIsImxvY2FsZSI6InJ1IiwiaWF0IjoxNjk5NjIzNTk5LCJleHAiOjE2OTk2MjcxOTl9.ey8VkR-seJYZ1W26BOJxXvhY6bCwiw_-MHRiU46BgE_deY-lHYiVTWnUyT7tU2pBRbvJ8LF8KwUSQWBB693RdvnEtZxSjEFJ7QlfmACznH96kXi2dpgtro6oiZtkbM9r_bxWIDRuSs-nU5R-1AcnLCr2taEdOdH7s3LB2FGCb0B0c1WnQNuTx8-4nEbnslLezQZ2PRSX03__C1aiy3TKFp5fgBp2za7CxPAx3CE-baSw5OuUDkpPURERQxco5VAVrn4XS5CnLDEN5CoMn8CRXlmsJ4LvWS9MAl5JJssMyR9Kx_b0Os3iOyQf85B5PONn58z4s7WDGQQmko11aXV3Pg',
+    };
+    var response = await _ioClient.post(
+      Uri.https('9082-37-214-4-11.ngrok-free.app', '', queryParameters),
+    );
 
-// Make the HTTPS request to the server
-    /* final response = await HttpClient(context: securityContext).postUrl(url);
-    final response = await http.post(url, headers: {
-      'accessToken':
-          'eyJhbGciOiJSUzI1NiIsImtpZCI6ImEwNmFmMGI2OGEyMTE5ZDY5MmNhYzRhYmY0MTVmZjM3ODgxMzZmNjUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI0MTIzNTA4NjMwMjctZGZpdGhnOGgwNjY4djFoNTJoOWhzcWY5NjAyazFyNDAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI0MTIzNTA4NjMwMjctaWswODJpdDUyMTFhN2I1Y3VubGlwcjYzYm50aWxiZzguYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDkzMzg0ODY2OTkxNTQ1NzY2NDUiLCJlbWFpbCI6Im5pa2l0YS5sZXZlbnRldjk3QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiRXppbyBOaWsiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jTEZ3VkxZS2l3NnFiRjNTaFdNMXFrSUowSVRoLTUxbS00QmdGbHJzRVZOPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6IkV6aW8iLCJmYW1pbHlfbmFtZSI6Ik5payIsImxvY2FsZSI6InJ1IiwiaWF0IjoxNjk4MDY5NDU2LCJleHAiOjE2OTgwNzMwNTZ9.eie_wFgBFYMpLHe9klHB3mDeP-eV1DEA3H3IvLtKouFNUSvycEoTT0Y2rDAvoAN0pMC4yfNKxHVNRqebhz5g06gScbhXCLxLHDZ-BT8mAKaqBOJWY9NCHXTgffnsFXnMK0nbHuwi8q03ARZaRszx6qo1pnxzSAYAqJEVnJMj2DPOTb1sYcb2aGQ7VAgVc9p03jv1oIgQDnkNI2Jqe16e45KERZ_9ypgIN7Ijm5sy7-aXn0mF4mqPu_oV38Xkg8Oa4YsiQMrIT_qidMrPFZeI41ldEk_Xf-504K-QfslmHDzkDg1vILVChlbl6SOLEI9MBBcJjPOUMNiG0XxUNtKtAw',
-      'idToken': '1',
-      'email': 'nikita.leventev97@gmail.com',
-    });
-
-    if (response.statusCode == 200) {
-      print(response.body);
-      return response.body;
-    } else {
-      throw Exception('Failed to login');
-    }*/
+    print(response.statusCode);
+    print(response.body);
   }
 
-  Future<String> login2() async {
-    final String serverUrl = 'https://127.0.0.1:8080/login2';
-    final url = Uri.parse(serverUrl);
-
-    // Load the SSL certificate for the server
-    SecurityContext securityContext = SecurityContext.defaultContext;
-
-    // Make the HTTPS request to the server
-    final response = await HttpClient(context: securityContext).postUrl(url);
-
-    HttpClientResponse httpResponse = await response.close();
-    String responseBody = await httpResponse.transform(utf8.decoder).join();
-    if (httpResponse.statusCode == 200) {
-      print(responseBody);
-      return responseBody;
-    } else {
-      throw Exception('Failed to login');
-    }
+  Future<SecurityContext> get globalContext async {
+    final sslCert1 = await rootBundle.load('assets/loc1.crt');
+    SecurityContext sc = SecurityContext(withTrustedRoots: false);
+    sc.setTrustedCertificatesBytes(sslCert1.buffer.asInt8List());
+    return sc;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login Example'),
-      ),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            login().then((response) {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('Login Response'),
-                    content: Text(response),
-                    actions: [
-                      TextButton(
-                        child: Text('Close'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ],
-                  );
-                },
-              );
-            }).catchError((error) {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text('Error'),
-                    content: Text(error.toString()),
-                    actions: [
-                      TextButton(
-                        child: Text('Close'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ],
-                  );
-                },
-              );
-            });
+        child: MaterialButton(
+          onPressed: () async {
+            await fetchData();
           },
-          child: Text('Login'),
+          child: const Text('Press here'),
         ),
       ),
     );
